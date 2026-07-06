@@ -77,7 +77,7 @@ public sealed class D365MockService
             now);
 
         _store[clientId] = record;
-        _logger.LogInformation("D365 Create client {ClientId} '{LegalName}'", clientId, legalName);
+        _logger.LogInformation("D365 Create client {ClientId} '{LegalName}'", Sanitize(clientId), Sanitize(legalName));
         return record;
     }
 
@@ -109,4 +109,7 @@ public sealed class D365MockService
     }
 
     public string Serialize(object obj) => JsonSerializer.Serialize(obj, JsonOptions);
+
+    private static string Sanitize(string? value) =>
+        (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ');
 }

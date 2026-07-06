@@ -40,11 +40,14 @@ public abstract class BaseAgent
         _logger = logger ?? LoggerFactory.Create(b => b.AddConsole()).CreateLogger(agentId);
     }
 
+    private static string SanitizeLog(string? value) =>
+        (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ');
+
     public async Task<string> RunAsync(string message)
     {
         var sw = Stopwatch.StartNew();
         var preview = message.Length > 120 ? message[..120] + "\u2026" : message;
-        _logger.LogInformation("[{AgentId}] RunAsync starting. Message: {Preview}", _agentId, preview);
+        _logger.LogInformation("[{AgentId}] RunAsync starting. Message: {Preview}", _agentId, SanitizeLog(preview));
 
         var responseClient = await EnsureResponseClientAsync();
 
