@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Institutional Client Onboarding</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f6fa; color: #1a1a2e; }
+    header { background: #0f3460; color: #fff; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 1.3rem; font-weight: 600; }
+    header span { font-size: 0.85rem; opacity: 0.7; }
+    .layout { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 56px); }
+    nav { background: #16213e; padding: 24px 0; }
+    nav button { display: block; width: 100%; padding: 12px 24px; text-align: left; background: none; border: none; color: #a8b2d8; cursor: pointer; font-size: 0.9rem; border-left: 3px solid transparent; transition: all 0.2s; }
+    nav button:hover, nav button.active { background: #0f3460; color: #e94560; border-left-color: #e94560; }
+    main { padding: 32px; overflow-y: auto; }
+    .card { background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+    .card h2 { font-size: 1.1rem; margin-bottom: 16px; color: #0f3460; border-bottom: 1px solid #e8ecf4; padding-bottom: 10px; }
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .form-group { flex: 1; min-width: 180px; }
+    label { display: block; font-size: 0.8rem; color: #666; margin-bottom: 4px; }
+    input, select { width: 100%; padding: 8px 10px; border: 1px solid #d1d9e6; border-radius: 4px; font-size: 0.9rem; outline: none; }
+    input:focus, select:focus { border-color: #0f3460; }
+    .btn { padding: 9px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
+    .btn-primary { background: #0f3460; color: #fff; }
+    .btn-primary:hover { background: #e94560; }
+    .btn-secondary { background: #e8ecf4; color: #0f3460; }
+    .btn-secondary:hover { background: #d1d9e6; }
+    .result { background: #f8f9fc; border: 1px solid #e8ecf4; border-radius: 4px; padding: 14px; margin-top: 14px; font-size: 0.85rem; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+    .status-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
+    .status-ReadyToTrade { background: #d4edda; color: #155724; }
+    .status-Rejected { background: #f8d7da; color: #721c24; }
+    .status-IntakeReceived { background: #fff3cd; color: #856404; }
+    .status-KycInProgress, .status-KycCompleted, .status-EntityResolutionInProgress, .status-EntityResolved, .status-FinancialReviewInProgress, .status-FinancialReviewCompleted { background: #d1ecf1; color: #0c5460; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e8ecf4; }
+    th { background: #f4f6fa; font-weight: 600; color: #555; }
+    tr:hover td { background: #f8f9fc; }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid #e8ecf4; border-top-color: #0f3460; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none; }
+    #page-clients, #page-intake, #page-kyc, #page-entity, #page-financial, #page-orchestrate { display: none; }
+    #page-clients { display: block; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Institutional Client Onboarding</h1>
+    <span>Powered by Azure AI Foundry · D365 CRM · Fabric Work IQ · Bing Web IQ</span>
+  </header>
+  <div class="layout">
+    <nav>
+      <button class="active" onclick="showPage('clients', this)">Client Dashboard</button>
+      <button onclick="showPage('intake', this)">1. Client Intake</button>
+      <button onclick="showPage('kyc', this)">2. KYC / AML</button>
+      <button onclick="showPage('entity', this)">3. Entity Resolution</button>
+      <button onclick="showPage('financial', this)">4. Financial Review</button>
+      <button onclick="showPage('orchestrate', this)">Full Orchestration</button>
+    </nav>
+    <main>
+
+      <!-- Client Dashboard -->
+      <div id="page-clients">
+        <div class="card">
+          <h2>Client Records (D365 Mock)</h2>
+          <button class="btn btn-secondary" onclick="loadClients()">Refresh</button>
+          <div id="clients-table" style="margin-top:16px"></div>
+        </div>
+      </div>
+
+      <!-- Intake -->
+      <div id="page-intake">
+        <div class="card">
+          <h2>Client Intake Agent</h2>
+          <p style="font-size:0.85rem;color:#666;margin-bottom:16px">Registers a new institutional client in D365 and persists intake data to Fabric.</p>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Client ID</label>
+              <input id="intake-clientId" placeholder="CLT-0002" />
+            </div>
+            <div class="form-group">
+              <label>Legal Name</label>
+              <input id="intake-legalName" placeholder="Full legal entity name" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Entity Type</label>
+              <select id="intake-entityType">
+                <option>Corporation</option>
+                <option>LLC</option>
+                <option>Partnership</option>
+                <option selected>Fund</option>
+                <option>Trust</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Country of Incorporation</label>
+              <input id="intake-country" placeholder="United States" />
+            </div>
+            <div class="form-group">
+              <label>Regulatory ID</label>
+              <input id="intake-regId" placeholder="SEC-12345" />
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="runIntake()">Run Intake Agent</button>
+          <div id="intake-result" class="result hidden"></div>
+        </div>
+      </div>
+
+      <!-- KYC/AML -->
+      <div id="page-kyc">
+        <div class="card">
+          <h2>KYC / AML Agent</h2>
+          <p style="font-size:0.85rem;color:#666;margin-bottom:16px">Screens the client against sanctions lists, PEP databases, and adverse media via Bing Web IQ.</p>
+          <div class="form-row">
+            <div class="form-group" style="max-width:260px">
+              <label>Client ID</label>
+              <input id="kyc-clientId" placeholder="CLT-0001" />
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="runKyc()">Run KYC/AML Agent</button>
+          <div id="kyc-result" class="result hidden"></div>
+        </div>
+      </div>
+
+      <!-- Entity Resolution -->
+      <div id="page-entity">
+        <div class="card">
+          <h2>Entity Resolution Agent</h2>
+          <p style="font-size:0.85rem;color:#666;margin-bottom:16px">Resolves corporate hierarchy, UBO, and affiliates using D365 and external Web IQ search.</p>
+          <div class="form-row">
+            <div class="form-group" style="max-width:260px">
+              <label>Client ID</label>
+              <input id="entity-clientId" placeholder="CLT-0001" />
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="runEntity()">Run Entity Resolution Agent</button>
+          <div id="entity-result" class="result hidden"></div>
+        </div>
+      </div>
+
+      <!-- Financial Review -->
+      <div id="page-financial">
+        <div class="card">
+          <h2>Financial Review Agent</h2>
+          <p style="font-size:0.85rem;color:#666;margin-bottom:16px">Assesses NAV, credit rating, and trading capacity using Fabric Work IQ and external data.</p>
+          <div class="form-row">
+            <div class="form-group" style="max-width:260px">
+              <label>Client ID</label>
+              <input id="financial-clientId" placeholder="CLT-0001" />
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="runFinancial()">Run Financial Review Agent</button>
+          <div id="financial-result" class="result hidden"></div>
+        </div>
+      </div>
+
+      <!-- Orchestrate -->
+      <div id="page-orchestrate">
+        <div class="card">
+          <h2>Full Onboarding Orchestrator</h2>
+          <p style="font-size:0.85rem;color:#666;margin-bottom:16px">Runs the complete onboarding workflow for a client — from intake through to Ready to Trade.</p>
+          <div class="form-row">
+            <div class="form-group" style="max-width:260px">
+              <label>Client ID</label>
+              <input id="orch-clientId" placeholder="CLT-0001" />
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="runOrchestrate()">Run Orchestrator Agent</button>
+          <div id="orch-result" class="result hidden"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    function showPage(page, btn) {
+      document.querySelectorAll('main > div').forEach(d => d.style.display = 'none');
+      document.getElementById('page-' + page).style.display = 'block';
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (page === 'clients') loadClients();
+    }
+
+    async function loadClients() {
+      const el = document.getElementById('clients-table');
+      el.innerHTML = '<span class="spinner"></span> Loading...';
+      try {
+        const res = await fetch('/api/d365/clients');
+        const data = await res.json();
+        const clients = data.clients || [];
+        if (!clients.length) { el.innerHTML = '<p>No clients found.</p>'; return; }
+        el.innerHTML = `<table>
+          <thead><tr><th>Client ID</th><th>Legal Name</th><th>Entity Type</th><th>Status</th><th>Risk</th><th>Credit</th><th>Trading Limit</th><th>Updated</th></tr></thead>
+          <tbody>${clients.map(c => `<tr>
+            <td>${c.clientId}</td>
+            <td>${c.legalName}</td>
+            <td>${c.entityType}</td>
+            <td><span class="status-badge status-${c.status}">${c.status}</span></td>
+            <td>${c.riskRating ?? '-'}</td>
+            <td>${c.creditRating ?? '-'}</td>
+            <td>${c.approvedTradingLimit != null ? '$' + Number(c.approvedTradingLimit).toLocaleString() : '-'}</td>
+            <td>${new Date(c.updatedAt).toLocaleDateString()}</td>
+          </tr>`).join('')}</tbody>
+        </table>`;
+      } catch (e) {
+        el.innerHTML = '<p style="color:red">Failed to load clients: ' + e.message + '</p>';
+      }
+    }
+
+    async function callAgent(url, body, resultId) {
+      const el = document.getElementById(resultId);
+      el.classList.remove('hidden');
+      el.textContent = '';
+      const spinner = document.createElement('span');
+      spinner.className = 'spinner';
+      el.appendChild(spinner);
+      el.appendChild(document.createTextNode(' Running agent...'));
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        el.textContent = JSON.stringify(data, null, 2);
+      } catch (e) {
+        el.textContent = 'Error: ' + e.message;
+      }
+    }
+
+    function runIntake() {
+      callAgent('/api/onboarding/intake', {
+        clientId: document.getElementById('intake-clientId').value,
+        legalName: document.getElementById('intake-legalName').value,
+        entityType: document.getElementById('intake-entityType').value,
+        countryOfIncorporation: document.getElementById('intake-country').value || null,
+        regulatoryId: document.getElementById('intake-regId').value || null
+      }, 'intake-result');
+    }
+
+    function runKyc() {
+      callAgent('/api/onboarding/kyc', { clientId: document.getElementById('kyc-clientId').value }, 'kyc-result');
+    }
+
+    function runEntity() {
+      callAgent('/api/onboarding/entity-resolution', { clientId: document.getElementById('entity-clientId').value }, 'entity-result');
+    }
+
+    function runFinancial() {
+      callAgent('/api/onboarding/financial-review', { clientId: document.getElementById('financial-clientId').value }, 'financial-result');
+    }
+
+    function runOrchestrate() {
+      callAgent('/api/onboarding/orchestrate', { clientId: document.getElementById('orch-clientId').value }, 'orch-result');
+    }
+
+    loadClients();
+  </script>
+</body>
+</html>
