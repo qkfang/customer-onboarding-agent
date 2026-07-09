@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 env:
-  PROJECT_NAME: '' # {projectName}
-  PROJECT_ABBR: '' # {projectAbbr}
+  PROJECT_NAME: 'client_intelligence' # {projectName}
+  PROJECT_ABBR: 'clientiq' # {projectAbbr}
 
 jobs:
   deploy-dev:

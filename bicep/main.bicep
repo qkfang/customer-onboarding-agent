@@ -112,6 +112,9 @@ resource blobDataContributorAssignment 'Microsoft.Authorization/roleAssignments@
     principalId: appService.outputs.principalId
     principalType: 'ServicePrincipal'
   }
+  dependsOn: [
+    storage
+  ]
 }
 
 resource principalBlobDataContributorAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for principal in principals: {
@@ -122,4 +125,7 @@ resource principalBlobDataContributorAssignments 'Microsoft.Authorization/roleAs
     principalId: principal.id
     principalType: principal.principalType
   }
+  dependsOn: [
+    storage
+  ]
 }]

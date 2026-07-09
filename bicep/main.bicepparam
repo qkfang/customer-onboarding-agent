@@ -1,7 +1,7 @@
 using 'main.bicep'
 
-param projectAbbr = 'custonbr'
-param projectName = 'customer_onboarding'
+param projectAbbr = 'clientiq'
+param projectName = 'client_intelligence'
 param location = 'australiaeast'
 
 param principals = [
