@@ -37,6 +37,7 @@ var webAppName = '${projectAbbr}-web'
 
 var aiProjectName = '${projectAbbr}-proj'
 var aiServicesName = '${projectAbbr}-ais'
+var aiSearchName = '${projectAbbr}-search'
 var bingSearchName = '${projectAbbr}-bing'
 var fabricCapacityName = '${projectAbbr}fabric'
 
@@ -65,6 +66,16 @@ module foundry './modules/foundry.bicep' = {
     location: location
     foundryServicesName: aiServicesName
     foundryProjectName: aiProjectName
+    aiSearchEndpoint: aiSearch.outputs.endpoint
+    aiSearchResourceId: aiSearch.outputs.id
+  }
+}
+
+module aiSearch './modules/aisearch.bicep' = {
+  name: 'aisearch'
+  params: {
+    location: location
+    name: aiSearchName
   }
 }
 
@@ -129,3 +140,49 @@ resource principalBlobDataContributorAssignments 'Microsoft.Authorization/roleAs
     storage
   ]
 }]
+
+resource searchService 'Microsoft.Search/searchServices@2024-06-01-preview' existing = {
+  name: aiSearchName
+}
+
+// Foundry account managed identity -> Search Index Data Reader on the search service
+resource foundrySearchIndexDataReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: searchService
+  name: guid(aiSearchName, aiServicesName, '1407120a-92aa-4202-b7e9-c0e197c71c8f')
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '1407120a-92aa-4202-b7e9-c0e197c71c8f')
+    principalId: foundry.outputs.aiHubPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [
+    aiSearch
+  ]
+}
+
+// Foundry account managed identity -> Search Service Contributor on the search service
+resource foundrySearchServiceContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: searchService
+  name: guid(aiSearchName, aiServicesName, '7ca78c08-252a-4471-8644-bb5ff32d4ba0')
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7ca78c08-252a-4471-8644-bb5ff32d4ba0')
+    principalId: foundry.outputs.aiHubPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [
+    aiSearch
+  ]
+}
+
+// Foundry project managed identity -> Search Index Data Reader on the search service
+resource foundryProjectSearchIndexDataReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: searchService
+  name: guid(aiSearchName, aiProjectName, '1407120a-92aa-4202-b7e9-c0e197c71c8f')
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '1407120a-92aa-4202-b7e9-c0e197c71c8f')
+    principalId: foundry.outputs.aiProjectPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [
+    aiSearch
+  ]
+}
